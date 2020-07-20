@@ -1,0 +1,73 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+import Network.Wai (
+    Application,
+    Request,
+    responseLBS,
+    responseBuilder,
+    strictRequestBody,
+    pathInfo,
+    requestMethod)
+import Lib.Utils (
+    Method(..),
+    jsonResponse,
+    textResponse,
+    takeFirstPath,
+    parseMethod)
+import qualified Data.Text as T
+import qualified Data.UUID as UUID
+import Network.HTTP.Types (status200, status204, status405, status400)
+import Network.Wai.Handler.Warp (run)
+import Network.Wai.Middleware.RequestLogger (logStdoutDev)
+import Network.Wai.Middleware.AddHeaders (addHeaders)
+import Lib.Database (settings, withDatabase)
+import qualified Lib.Repository.Tools.Handler as H
+import qualified Lib.Repository.Tools.Data as D
+
+-- The tools router
+toolsRouter conn req respond =
+    case parseMethod req of
+        Get -> do
+            tools <- fmap D.encodeTools (H.getTools conn)
+            jsonResponse respond status200 tools
+
+        Post -> do
+            print "post"
+            maybeNewTool <- fmap D.decodeNewTool (strictRequestBody req)
+            print maybeNewTool
+            case maybeNewTool of
+                Nothing -> textResponse respond status400 "BAD"
+                Just newTool -> do
+                    id <- H.addTool conn newTool
+                    textResponse respond status200 $ UUID.toLazyASCIIBytes id
+
+        Delete (Just id) -> 
+            case UUID.fromText id of
+              Nothing -> textResponse respond status400 "BAD"
+              Just id -> do
+                  H.removeToolById conn id
+                  textResponse respond status204 ""
+
+        Delete Nothing -> textResponse respond status400 "BAD"
+
+        _ -> respond $ responseLBS status405 [] ""
+
+
+helloWeb = "{\"Hello\":\"Web\"}"
+
+-- TODO: add a custom exception handler
+app req respond = 
+    withDatabase settings $ \conn ->
+        case takeFirstPath req of
+          Just ("tools", req') -> toolsRouter conn req' respond
+          _                    -> jsonResponse respond status200 helloWeb
+
+
+-- TODO: add more OWASP recommendation
+-- TODO: add middleware to verify the body size
+main = do
+    putStrLn "http://localhost:8080/"
+
+    run 8080 $ addHeaders [("Server", "")]  -- OWASP recommendation
+             $ logStdoutDev                 -- Logger
+             $ app

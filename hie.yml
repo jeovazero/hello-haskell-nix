@@ -1,0 +1,8 @@
+cradle:
+  direct:
+    arguments:
+      - -fwarn-unused-binds
+      - -fwarn-unused-imports
+      - -fwarn-incomplete-patterns
+      - -fwarn-incomplete-uni-patterns
+      - -fwarn-orphans

@@ -1,0 +1,5 @@
+%syntax-version=1.0.0
+%project=hello
+
+init-schema 2020-04-26T23:37:07Z jeovazero <jeogod@debian> # Add hello schema
+tools [init-schema] 2020-04-27T01:04:57Z jeovazero <jeogod@debian> # Add tools table
