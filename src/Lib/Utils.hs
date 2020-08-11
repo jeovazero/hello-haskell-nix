@@ -30,7 +30,8 @@ textResponse respond status content =
             [("Content-Type", "text/plain")]
             content
 
-data Method = Get
+data Method = GetMany
+            | GetOne Text
             | Post
             | Put (Maybe Text)
             | Delete (Maybe Text)
@@ -38,7 +39,7 @@ data Method = Get
 
 parseMethod :: Request -> Method
 parseMethod req = case requestMethod req of
-    "GET"    -> Get
+    "GET"    -> maybe GetMany GetOne maybeParam
     "POST"   -> Post
     "PUT"    -> Put maybeParam
     "DELETE" -> Delete maybeParam

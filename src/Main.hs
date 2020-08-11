@@ -16,7 +16,7 @@ import Lib.Utils (
     parseMethod)
 import qualified Data.Text as T
 import qualified Data.UUID as UUID
-import Network.HTTP.Types (status200, status204, status405, status400)
+import Network.HTTP.Types (status200, status204, status405, status404, status400)
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.RequestLogger (logStdoutDev)
 import Network.Wai.Middleware.AddHeaders (addHeaders)
@@ -27,9 +27,20 @@ import qualified Lib.Repository.Tools.Data as D
 -- The tools router
 toolsRouter conn req respond =
     case parseMethod req of
-        Get -> do
+        GetMany -> do
             tools <- fmap D.encodeTools (H.getTools conn)
             jsonResponse respond status200 tools
+
+        GetOne id ->
+            case UUID.fromText id of
+              Nothing -> textResponse respond status400 "BAD"
+              Just id -> do
+                  tool <- H.getTool conn id
+                  let toolDecoded = fmap D.encodeTool tool
+
+                  case toolDecoded of
+                    Nothing -> textResponse respond status404 "Not Found"
+                    Just tool -> jsonResponse respond status200 tool
 
         Post -> do
             print "post"
