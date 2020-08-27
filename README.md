@@ -22,7 +22,7 @@ Todo:
 - [ ] tests (hspec perhaps)
 - [ ] implement the PUT method
 - [x] implement the GET method for a single tool
-- [ ] build docker image (with nix)
+- [x] build docker image (with nix)
 
 ### Running
 
