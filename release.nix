@@ -3,8 +3,8 @@
 let
 
   # pkgs = import <nixpkgs> { };
-  pkgs = import ./source.nix { json = ./source.json; };
+  pkgs = import ./nix/source.nix { json = ./nix/source.json; };
 
 in
-  pkgs.haskell.packages.${compiler}.callPackage ./default.nix {}
+  pkgs.haskell.packages.${compiler}.callCabal2nix "hello" ./. {}
 
