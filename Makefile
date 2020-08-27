@@ -22,3 +22,5 @@ db-migrations:
 db-up:
 	arion up -d
 
+docker-image:
+	nix-build docker.nix -o image
