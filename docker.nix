@@ -1,12 +1,11 @@
-{ nixpkgs ? import ./nix/source.nix { json = ./nix/source.json; }
- }:
+{ nixpkgs ? import ./nix/pinnedNix.nix { }
+}:
 let
   inherit (nixpkgs) pkgs;
 
   project = pkgs.haskell.lib.justStaticExecutables
-              ( pkgs.haskellPackages.callCabal2nix "hello" ./. { } );
+    (import ./release.nix {});
 in
-
 pkgs.dockerTools.buildImage {
   name = "hello-tools-api";
   created = "now";

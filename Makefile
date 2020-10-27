@@ -19,6 +19,7 @@ db-start: db-up db-migrations
 
 db-migrations:
 	cd migrations && sqitch deploy
+
 db-up:
 	arion up -d
 

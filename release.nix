@@ -1,10 +1,7 @@
-{ compiler ? "ghc865" }:
-
+{ nixpkgs ? import ./nix/pinnedNix.nix { config = { allowBroken = true; }; } }:
 let
 
-  # pkgs = import <nixpkgs> { };
-  pkgs = import ./nix/source.nix { json = ./nix/source.json; };
+  inherit (nixpkgs) pkgs;
 
 in
-  pkgs.haskell.packages.${compiler}.callCabal2nix "hello" ./. {}
-
+pkgs.haskell.packages.ghc884.callCabal2nix "hello" ./. { }
