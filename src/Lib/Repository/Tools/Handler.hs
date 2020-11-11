@@ -5,9 +5,11 @@
 module Lib.Repository.Tools.Handler (
     addTool,
     removeToolById,
+    updateTool,
     getTools,
     getTool
 ) where
+import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import qualified Lib.Repository.Tools.Statements as S
 import qualified Control.Exception as C
@@ -35,7 +37,7 @@ unboxMaybeList acc [] = acc
 unboxMaybeList acc (Nothing:xs) = unboxMaybeList acc []
 unboxMaybeList acc (Just x:xs) = unboxMaybeList (x:acc) xs
 
-tool (a,b,c,d) = Tool a b c (maybe [] (unboxMaybeList []) d)
+tool (a,b,c,d) = Tool a b c (maybe [] catMaybes d)
 
 getTools :: PGConnection -> IO [Tool]
 getTools conn = do
@@ -50,3 +52,11 @@ getTool conn tool_id = do
 
 removeToolById :: PGConnection -> UUID -> IO [()]
 removeToolById = S.removeToolById
+
+updateTool :: PGConnection -> Tool -> [Text] -> [Text] -> IO [()]
+updateTool conn Tool{ id, name, description } tagsToAdd tagsToRemove =
+    pgTransaction conn $ do
+        let tool_ids = fmap (const id) tagsToAdd
+        S.addTags conn tool_ids tagsToAdd
+        S.removeTags conn id tagsToRemove
+        S.updateTool conn id name description

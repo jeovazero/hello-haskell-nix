@@ -1,20 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Network.Wai (
-    Application,
-    Request,
     responseLBS,
-    responseBuilder,
-    strictRequestBody,
-    pathInfo,
-    requestMethod)
+    strictRequestBody)
 import Lib.Utils (
     Method(..),
     jsonResponse,
     textResponse,
     takeFirstPath,
     parseMethod)
-import qualified Data.Text as T
 import qualified Data.UUID as UUID
 import Network.HTTP.Types (status200, status204, status405, status404, status400)
 import Network.Wai.Handler.Warp (run)
@@ -52,6 +46,28 @@ toolsRouter conn req respond =
                     id <- H.addTool conn newTool
                     textResponse respond status200 $ UUID.toLazyASCIIBytes id
 
+        Put (Just id) -> do
+            print "put"
+            maybeUpdateTool <- fmap D.decodeUpdateTool (strictRequestBody req)
+            print maybeUpdateTool
+            case maybeUpdateTool of
+                Nothing -> textResponse respond status400 "BAD"
+                Just updateTool -> do
+                    case UUID.fromText id of
+                        Nothing -> textResponse respond status400 "BAD"
+                        Just id -> do
+                            maybeTool <- H.getTool conn id
+                            case maybeTool of
+                              Just tool -> do
+                                let (tagsToAdd, tagsToRemove, payload) = D.getUpdateInfo tool updateTool
+                                print tagsToAdd
+                                print tagsToRemove
+                                H.updateTool conn payload tagsToAdd tagsToRemove
+                                textResponse respond status200 "OK"
+                              Nothing -> textResponse respond status400 "BAD"
+
+        Put Nothing -> textResponse respond status400 "BAD"
+
         Delete (Just id) -> 
             case UUID.fromText id of
               Nothing -> textResponse respond status400 "BAD"
@@ -62,6 +78,7 @@ toolsRouter conn req respond =
         Delete Nothing -> textResponse respond status400 "BAD"
 
         _ -> respond $ responseLBS status405 [] ""
+
 
 
 helloWeb = "{\"Hello\":\"Web\"}"

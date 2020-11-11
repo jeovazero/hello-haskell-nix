@@ -8,6 +8,8 @@ module Lib.Repository.Tools.Statements (
     getTool,
     getTools,
     removeToolById,
+    updateTool,
+    removeTags,
     addTags
 ) where
 import Prelude hiding (words)
@@ -58,6 +60,14 @@ addTool conn name description =
         RETURNING tool_id
     |]
 
+updateTool :: PGConnection -> UUID -> Text -> Maybe Text -> IO [()]
+updateTool conn id name description =
+    pgQuery conn [pgSQL|
+        UPDATE hello.tools
+        SET name = ${name},
+            description = ${description}
+        WHERE tool_id = ${id}
+    |]
 
 removeToolById :: PGConnection -> UUID -> IO [()]
 removeToolById conn tool_id =
@@ -73,4 +83,11 @@ addTags conn tools_ids names =
         INSERT INTO hello.tags (tool_id,name)
         SELECT * FROM UNNEST(${tools_ids}::uuid[], ${names}::text[])
         returning tool_id
+    |]
+
+removeTags :: PGConnection -> UUID -> [Text] -> IO [()]
+removeTags conn tool_id tag_names =
+    pgQuery conn [pgSQL|
+        DELETE FROM hello.tags
+        WHERE tool_id = ${tool_id} AND name = ANY(${tag_names})
     |]
