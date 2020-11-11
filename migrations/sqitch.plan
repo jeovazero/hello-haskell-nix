@@ -1,5 +1,6 @@
 %syntax-version=1.0.0
 %project=hello
 
-init-schema 2020-04-26T23:37:07Z jeovazero <jeogod@debian> # Add hello schema
-tools [init-schema] 2020-04-27T01:04:57Z jeovazero <jeogod@debian> # Add tools table
+0001-init-schema 2020-04-26T23:37:07Z jeovazero <jeogod@debian> # Add hello schema
+0002-add-users [0001-init-schema] 2020-04-27T01:04:57Z jeovazero <jeogod@debian> # Add tools table
+0003-tools-and-tags [0002-add-users] 2020-11-11T02:36:10Z jeovazero <jeogod@debian> # add hello.users

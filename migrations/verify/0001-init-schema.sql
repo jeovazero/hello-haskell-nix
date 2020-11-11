@@ -1,4 +1,4 @@
--- Verify hello:init-schema on pg
+-- Verify hello:0001-init-schema on pg
 
 BEGIN;
 

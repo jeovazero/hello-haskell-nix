@@ -1,4 +1,4 @@
--- Deploy hello:init-schema to pg
+-- Deploy hello:0001-init-schema to pg
 
 BEGIN;
 
