@@ -32,11 +32,6 @@ addTool conn NewTool{ name, description, tags } = pgTransaction conn $ do
     S.addTags conn tools_ids tags
     pure tool_id
 
-unboxMaybeList :: [a] -> [Maybe a] -> [a]
-unboxMaybeList acc [] = acc
-unboxMaybeList acc (Nothing:xs) = unboxMaybeList acc []
-unboxMaybeList acc (Just x:xs) = unboxMaybeList (x:acc) xs
-
 tool (a,b,c,d) = Tool a b c (maybe [] catMaybes d)
 
 getTools :: PGConnection -> IO [Tool]

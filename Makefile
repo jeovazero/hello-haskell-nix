@@ -1,7 +1,7 @@
 all: build
 
 dev:
-	ghcid --lint --command "ghci app/Main -fobject-code -i.:src" --test main
+	ghcid --lint --command "ghci app/Main -fobject-code -i.:src:app" --test main
 
 build:
 	nix-build release.nix
