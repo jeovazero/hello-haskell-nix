@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NamedFieldPuns    #-}
 module Auth (authRouter) where
 
 import Network.HTTP.Types (status200, status400, status401, status405)
@@ -20,11 +19,10 @@ authRouter conn req respond =
         maybeCredentials <- fmap decodeUserCredentials (strictRequestBody req)
         case maybeCredentials of
             Nothing -> textResponse respond status400 "BAD"
-            Just UserCredentials{ email } -> do
-                user <- H.getUserByEmail conn email
-                case user of
-                    Nothing -> textResponse respond status401 "unauthorized"
-                    Just _ ->
-                        textResponse respond status200 "OK"
+            Just credentials -> do
+                isAuthenticated <- H.verifyUserCredentials conn credentials
+                case isAuthenticated of
+                    False -> textResponse respond status401 "unauthorized"
+                    True -> textResponse respond status200 "OK"
 
       _ -> respond $ responseLBS status405 [] ""
