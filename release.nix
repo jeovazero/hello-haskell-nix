@@ -3,5 +3,17 @@ let
 
   inherit (nixpkgs) pkgs;
 
+  ghc884 = pkgs.haskell.packages.ghc884;
+  dontCheck = pkgs.haskell.lib.dontCheck;
+
+  password-types = dontCheck (ghc884.callPackage ./nix/password-types.nix {});
+  password = ghc884.callPackage ./nix/password.nix { inherit password-types; };
+
+  myPkgs = ghc884.override {
+    overrides = self: super: {
+      password = dontCheck password;
+    };
+  };
+
 in
-pkgs.haskell.packages.ghc884.callCabal2nix "hello" ./. { }
+myPkgs.callCabal2nix "hello" ./. { }
