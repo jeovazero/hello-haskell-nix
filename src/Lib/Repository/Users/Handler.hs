@@ -34,18 +34,15 @@ addUser conn NewUser{ name, email, password } = pgTransaction conn $ do
     userUUID' <- S.addUser conn name email hash
     headOrThrow userUUID'
 
-getUserCredentialsByEmail :: PGConnection -> Text -> IO (Maybe UserCredentials)
-getUserCredentialsByEmail conn email = do
-    credentials <- S.getUserByEmail conn email
-    pure (uncurry UserCredentials <$> safeHead credentials)
-
 verifyUserCredentials conn UserCredentials{ email, password = rawPassword } = do
-    let argonPassword = Argon.mkPassword rawPassword
-    credentials <- getUserCredentialsByEmail conn email
-    pure $ case credentials of
-      Nothing -> False
-      Just UserCredentials{ password = hashPassword } ->
+    credentialsRaw <- S.getUserByEmail conn email
+    let maybeUserInfo = safeHead credentialsRaw
+    pure $ case maybeUserInfo of
+      Nothing -> Nothing
+      Just (id, _, hashPassword) -> let
+            argonPassword = Argon.mkPassword rawPassword
+          in
           case Argon.checkPassword argonPassword (Argon.PasswordHash hashPassword) of
-              Argon.PasswordCheckFail -> False
-              Argon.PasswordCheckSuccess -> True
+              Argon.PasswordCheckFail -> Nothing
+              Argon.PasswordCheckSuccess -> Just id
 

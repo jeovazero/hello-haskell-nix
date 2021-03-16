@@ -30,10 +30,11 @@ getUser conn user_id =
         WHERE user_id = ${user_id}
     |]
 
-getUserByEmail :: PGConnection -> Text -> IO [(Text, Text)]
+getUserByEmail :: PGConnection -> Text -> IO [(UUID, Text, Text)]
 getUserByEmail conn email =
     pgQuery conn [pgSQL|
-        SELECT      email,
+        SELECT      user_id,
+                    email,
                     password
         FROM        hello.users
         WHERE email = ${email}
