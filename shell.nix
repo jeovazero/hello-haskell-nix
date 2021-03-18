@@ -13,7 +13,7 @@ pkgs.stdenv.mkDerivation {
   name = "shell";
 
   buildInputs = project.env.nativeBuildInputs
-    ++ [ cabal-install ghcid hlint arion sqitchPg postgresql_12 cabal2nix ];
+    ++ [ cabal-install ghcid hlint arion sqitchPg postgresql_12 cabal2nix haskellPackages.ghcide ];
 
   # https://github.com/NixOS/nix/issues/599
   LOCALE_ARCHIVE = "/usr/lib/locale/locale-archive";
