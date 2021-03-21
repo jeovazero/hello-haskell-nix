@@ -24,8 +24,8 @@ import Lib.Database (useTPGDatabase, settings)
 
 useTPGDatabase settings
 
-getTools :: PGConnection -> IO [(UUID, Text, Maybe Text,Maybe [Maybe Text])]
-getTools conn =
+getTools :: PGConnection -> UUID -> IO [(UUID, Text, Maybe Text,Maybe [Maybe Text])]
+getTools conn user_id =
     pgQuery conn [pgSQL|
         SELECT      tool_id,
                     tl.name,
@@ -33,12 +33,13 @@ getTools conn =
                     array_agg(tg.name)
         FROM        hello.tools tl
         LEFT JOIN   hello.tags  tg      USING (tool_id)
+        WHERE       tl.user_id = ${user_id}
         GROUP BY    tool_id
     |]
 
 
-getTool :: PGConnection -> UUID -> IO [(UUID, Text, Maybe Text,Maybe [Maybe Text])]
-getTool conn tool_id =
+getTool :: PGConnection -> UUID -> UUID -> IO [(UUID, Text, Maybe Text,Maybe [Maybe Text])]
+getTool conn user_id tool_id =
     pgQuery conn [pgSQL|
         SELECT      tool_id,
                     tl.name,
@@ -46,34 +47,34 @@ getTool conn tool_id =
                     array_agg(tg.name)
         FROM        hello.tools tl
         LEFT JOIN   hello.tags  tg      USING (tool_id)
-        WHERE tool_id = ${tool_id}
+        WHERE tool_id = ${tool_id} AND user_id = ${user_id}
         GROUP BY    tool_id
     |]
 
 
 
-addTool :: PGConnection -> Text -> Maybe Text -> IO [UUID]
-addTool conn name description =
+addTool :: PGConnection -> UUID -> Text -> Maybe Text -> IO [UUID]
+addTool conn user_id name description =
     pgQuery conn [pgSQL|
-        INSERT INTO hello.tools (name, description)
-        VALUES (${name}, ${description})
+        INSERT INTO hello.tools (name, description, user_id)
+        VALUES (${name}, ${description}, ${user_id})
         RETURNING tool_id
     |]
 
-updateTool :: PGConnection -> UUID -> Text -> Maybe Text -> IO [()]
-updateTool conn id name description =
+updateTool :: PGConnection -> UUID -> UUID -> Text -> Maybe Text -> IO [()]
+updateTool conn user_id id name description =
     pgQuery conn [pgSQL|
         UPDATE hello.tools
         SET name = ${name},
             description = ${description}
-        WHERE tool_id = ${id}
+        WHERE tool_id = ${id} AND user_id = ${user_id}
     |]
 
-removeToolById :: PGConnection -> UUID -> IO [()]
-removeToolById conn tool_id =
+removeToolById :: PGConnection -> UUID -> UUID -> IO [()]
+removeToolById conn user_id tool_id =
     pgQuery conn [pgSQL|
         DELETE FROM hello.tools
-        WHERE tool_id = ${tool_id}
+        WHERE tool_id = ${tool_id} AND user_id = ${user_id}
     |]
 
 

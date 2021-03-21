@@ -20,30 +20,33 @@ import Lib.Database (PGConnection)
 import qualified Data.Map as Map
 import qualified Data.Vault.Lazy as V
 import Data.Text
-import Data.Aeson (Value)
+import Data.Aeson (Value(String))
 import Data.Maybe (isJust)
 import Control.Monad (guard)
+
+uuidFromString (String id) = UUID.fromText id
+
+userIdFromReq key req =
+    V.lookup key (vault req)
+        >>= Map.lookup "id"
+        >>= uuidFromString
 
 -- The tools router
 toolsRouter :: PGConnection -> V.Key (Map.Map Text Value) -> Request -> (Response -> IO b) -> IO b
 toolsRouter conn key req respond = do
-    let reqVault = vault req
-    let payload = V.lookup key reqVault
-    let maybeUserId = fmap (Map.lookup "id") payload
-
-    case maybeUserId of
+    case userIdFromReq key req of
         Nothing -> respond $ responseLBS status401 [] "unauthorized"
-        Just userId  -> do
+        Just userId -> do
             case parseMethod req of
                 GetMany -> do
-                    tools <- fmap D.encodeTools (H.getTools conn)
+                    tools <- fmap D.encodeTools (H.getTools conn userId)
                     jsonResponse respond status200 tools
 
                 GetOne id ->
                     case UUID.fromText id of
                     Nothing -> textResponseLBS respond status400 "BAD"
                     Just id -> do
-                        tool <- H.getTool conn id
+                        tool <- H.getTool conn userId id
                         let toolDecoded = fmap D.encodeTool tool
 
                         case toolDecoded of
@@ -57,7 +60,7 @@ toolsRouter conn key req respond = do
                     case maybeNewTool of
                         Nothing -> textResponseLBS respond status400 "BAD"
                         Just newTool -> do
-                            id <- H.addTool conn newTool
+                            id <- H.addTool conn userId newTool
                             textResponseLBS respond status200 $ UUID.toLazyASCIIBytes id
 
                 Put (Just id) -> do
@@ -70,13 +73,13 @@ toolsRouter conn key req respond = do
                             case UUID.fromText id of
                                 Nothing -> textResponseLBS respond status400 "BAD"
                                 Just id -> do
-                                    maybeTool <- H.getTool conn id
+                                    maybeTool <- H.getTool conn userId id
                                     case maybeTool of
                                         Just tool -> do
                                             let (tagsToAdd, tagsToRemove, payload) = D.getUpdateInfo tool updateTool
                                             print tagsToAdd
                                             print tagsToRemove
-                                            H.updateTool conn payload tagsToAdd tagsToRemove
+                                            H.updateTool conn userId payload tagsToAdd tagsToRemove
                                             textResponseLBS respond status200 "OK"
                                         Nothing -> textResponseLBS respond status400 "BAD"
 
@@ -86,7 +89,7 @@ toolsRouter conn key req respond = do
                     case UUID.fromText id of
                     Nothing -> textResponseLBS respond status400 "BAD"
                     Just id -> do
-                        H.removeToolById conn id
+                        H.removeToolById conn userId id
                         textResponseLBS respond status204 ""
 
                 Delete Nothing -> textResponseLBS respond status400 "BAD"

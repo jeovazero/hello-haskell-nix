@@ -24,9 +24,9 @@ headOrThrow (x:_) = pure x
 safeHead [] = Nothing
 safeHead (x:_) = Just x
 
-addTool :: PGConnection -> NewTool -> IO UUID
-addTool conn NewTool{ name, description, tags } = pgTransaction conn $ do
-    toolRow <- S.addTool conn name description
+addTool :: PGConnection -> UUID -> NewTool -> IO UUID
+addTool conn user_id NewTool{ name, description, tags } = pgTransaction conn $ do
+    toolRow <- S.addTool conn user_id name description
     tool_id <- headOrThrow toolRow
     let tools_ids = fmap (const tool_id) tags
     S.addTags conn tools_ids tags
@@ -34,24 +34,24 @@ addTool conn NewTool{ name, description, tags } = pgTransaction conn $ do
 
 tool (a,b,c,d) = Tool a b c (maybe [] catMaybes d)
 
-getTools :: PGConnection -> IO [Tool]
-getTools conn = do
-    rows <- S.getTools conn
+getTools :: PGConnection -> UUID -> IO [Tool]
+getTools conn user_id = do
+    rows <- S.getTools conn user_id
     pure $ fmap tool rows
 
 
-getTool :: PGConnection -> UUID -> IO (Maybe Tool)
-getTool conn tool_id = do
-    rows <- S.getTool conn tool_id
+getTool :: PGConnection -> UUID -> UUID -> IO (Maybe Tool)
+getTool conn user_id tool_id = do
+    rows <- S.getTool conn user_id tool_id
     pure $ fmap tool $ safeHead rows
 
-removeToolById :: PGConnection -> UUID -> IO [()]
+removeToolById :: PGConnection -> UUID -> UUID -> IO [()]
 removeToolById = S.removeToolById
 
-updateTool :: PGConnection -> Tool -> [Text] -> [Text] -> IO [()]
-updateTool conn Tool{ id, name, description } tagsToAdd tagsToRemove =
+updateTool :: PGConnection -> UUID -> Tool -> [Text] -> [Text] -> IO [()]
+updateTool conn user_id Tool{ id, name, description } tagsToAdd tagsToRemove =
     pgTransaction conn $ do
         let tool_ids = fmap (const id) tagsToAdd
         S.addTags conn tool_ids tagsToAdd
         S.removeTags conn id tagsToRemove
-        S.updateTool conn id name description
+        S.updateTool conn user_id id name description
