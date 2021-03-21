@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Lib.Utils (
     jsonResponse,
+    textResponseLBS,
     textResponse,
     takeFirstPath,
     Method(..),
@@ -8,11 +9,14 @@ module Lib.Utils (
 
 import Data.Text (Text)
 import Network.Wai (
+    Response, 
     Application,
     Request,
     responseLBS,
     pathInfo,
     requestMethod)
+import Data.ByteString.Lazy (fromStrict, ByteString)
+import Network.HTTP.Types.Status (Status)
 
 takeFirstPath req = _takeFirst $ pathInfo req
     where _takeFirst []              = Nothing
@@ -24,11 +28,16 @@ jsonResponse respond status content =
             [("Content-Type", "application/json")]
             content
 
-textResponse respond status content =
+textResponseLBS :: (Response -> t) -> Status -> ByteString -> t
+textResponseLBS respond status content =
   respond $ responseLBS
             status
             [("Content-Type", "text/plain")]
             content
+
+textResponse respond status content = do
+    let contentLazy = fromStrict content
+    textResponseLBS respond status contentLazy
 
 data Method = GetMany
             | GetOne Text

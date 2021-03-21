@@ -1,13 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Lib.JWT (verify, encode) where
+module Lib.JWT (decode, encode) where
 
 import Prelude hiding (exp)
-import Web.JWT
+import Web.JWT hiding (decode)
 import Data.Text (Text)
 import Data.Aeson (Value)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import Data.Map as Map
+import Control.Monad (guard)
 
+headerJwt :: JOSEHeader
 headerJwt = JOSEHeader {
   alg = Just HS256,
   typ = Just "JWT",
@@ -25,3 +27,17 @@ encode secret expirationTime payload = do
     , unregisteredClaims = ClaimsMap (Map.fromList payload)
   }
   pure $ encodeSigned key headerJwt claimsSet
+
+decode secret token = do
+  let jwt = decodeAndVerifySignature (hmacSecret secret) token
+  time <- getPOSIXTime
+  pure $ case jwt of
+    Nothing -> Nothing
+    Just verifiedJwt -> do
+      let claimsSet = claims verifiedJwt
+      let maybeExpiration = exp claimsSet
+      case maybeExpiration of
+        Nothing -> Nothing
+        Just expiration -> do
+          guard (time <= secondsSinceEpoch expiration)
+          Just (unClaimsMap $ unregisteredClaims claimsSet)

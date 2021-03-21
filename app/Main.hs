@@ -1,8 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Network.Wai (
+import Network.Wai (ResponseReceived, 
     responseLBS,
-    strictRequestBody)
+    strictRequestBody,
+    Request,
+    Response)
 import Lib.Utils (
     Method(..),
     jsonResponse,
@@ -19,22 +21,26 @@ import qualified Lib.Repository.Tools.Handler as H
 import qualified Lib.Repository.Tools.Data as D
 import Tools (toolsRouter)
 import Users (usersRouter)
-import Auth (authRouter)
+import Auth (authRouter, jwtMiddleware)
 
 helloWeb = "{\"Hello\":\"Web\"}"
 
+secret = "dumb-secret"
+
 -- TODO: add a custom exception handler
+app :: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
 app req respond = 
     withDatabase settings $ \conn ->
         case takeFirstPath req of
-          Just ("tools", req') -> toolsRouter conn req' respond
+          Just ("tools", req') -> jwtMiddleware secret (toolsRouter conn) req' respond
           Just ("users", req') -> usersRouter conn req' respond
-          Just ("auth", req') -> authRouter conn req' respond
+          Just ("auth", req') -> authRouter conn secret req' respond
           _                    -> jsonResponse respond status200 helloWeb
 
 
 -- TODO: add more OWASP recommendation
 -- TODO: add middleware to verify the body size
+main :: IO ()
 main = do
     putStrLn "http://localhost:8080/"
 
