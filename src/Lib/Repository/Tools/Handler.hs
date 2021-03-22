@@ -16,29 +16,30 @@ import qualified Control.Exception as C
 import Data.UUID (UUID)
 import Database.PostgreSQL.Typed (pgQuery, pgTransaction, PGConnection, PGError)
 import Lib.Repository.Tools.Data (Tool(..), NewTool(..))
+import Lib.Exception (headOrThrow, AppException(..), AppExceptionType(..))
 
-headOrThrow :: [a] -> IO a
-headOrThrow [] = C.throwIO $ C.ErrorCall "empty list"
-headOrThrow (x:_) = pure x
-
+safeHead :: [a] -> Maybe a
 safeHead [] = Nothing
 safeHead (x:_) = Just x
 
 addTool :: PGConnection -> UUID -> NewTool -> IO UUID
 addTool conn user_id NewTool{ name, description, tags } = pgTransaction conn $ do
     toolRow <- S.addTool conn user_id name description
-    tool_id <- headOrThrow toolRow
+    tool_id <-
+        headOrThrow
+            toolRow
+            (AppException $ Unexpected "the addTool didn't return an ID")
     let tools_ids = fmap (const tool_id) tags
     S.addTags conn tools_ids tags
     pure tool_id
 
+tool :: (UUID, Text, Maybe Text, Maybe [Maybe Text]) -> Tool
 tool (a,b,c,d) = Tool a b c (maybe [] catMaybes d)
 
 getTools :: PGConnection -> UUID -> IO [Tool]
 getTools conn user_id = do
     rows <- S.getTools conn user_id
     pure $ fmap tool rows
-
 
 getTool :: PGConnection -> UUID -> UUID -> IO (Maybe Tool)
 getTool conn user_id tool_id = do

@@ -4,13 +4,14 @@ module Tools (toolsRouter) where
 import qualified Data.UUID as UUID
 import qualified Lib.Repository.Tools.Data as D
 import qualified Lib.Repository.Tools.Handler as H
+import Lib.Exception (appCatch)
 import Network.Wai (vault, 
     Response,
     Request, 
     responseLBS,
     strictRequestBody)
 import Network.HTTP.Types (status401, status200, status204, status405, status404, status400)
-import Lib.Utils (
+import Lib.Utils (appResponse,AppResult(..) ,
     Method(..),
     jsonResponse,
     textResponseLBS,
@@ -23,7 +24,12 @@ import Data.Text
 import Data.Aeson (Value(String))
 import Data.Maybe (isJust)
 import Control.Monad (guard)
+import Data.UUID (UUID)
+import Control.Exception (Exception)
+import Data.ByteString.Lazy (ByteString)
+import Network.HTTP.Types.Status (Status)
 
+uuidFromString :: Value -> Maybe UUID
 uuidFromString (String id) = UUID.fromText id
 
 userIdFromReq key req =
@@ -35,63 +41,69 @@ userIdFromReq key req =
 toolsRouter :: PGConnection -> V.Key (Map.Map Text Value) -> Request -> (Response -> IO b) -> IO b
 toolsRouter conn key req respond = do
     case userIdFromReq key req of
-        Nothing -> respond $ responseLBS status401 [] "unauthorized"
+        Nothing -> appResponse respond Unauthorized
         Just userId -> do
-            case parseMethod req of
-                GetMany -> do
-                    tools <- fmap D.encodeTools (H.getTools conn userId)
-                    jsonResponse respond status200 tools
+            appResult <- appCatch $ toolsResolver conn userId req
+            case appResult of
+                Right result -> appResponse respond result
+                Left err -> appResponse respond $ Exceptional err
 
-                GetOne id ->
+toolsResolver :: PGConnection -> UUID -> Request -> IO AppResult
+toolsResolver conn userId req = do
+    let method = parseMethod req
+    case method of
+        GetMany -> do
+            tools <- fmap D.encodeTools (H.getTools conn userId)
+            pure $ Ok tools
+
+        GetOne id ->
+            case UUID.fromText id of
+                Nothing -> pure BadRequest
+                Just id -> do
+                    tool <- H.getTool conn userId id
+                    let toolDecoded = fmap D.encodeTool tool
+                    case toolDecoded of
+                        Nothing -> pure $ NotFound
+                        Just tool -> pure $ Ok tool
+
+        Post -> do
+            -- TODO: don't use strictRequestBody
+            maybeNewTool <- fmap D.decodeNewTool (strictRequestBody req)
+            case maybeNewTool of
+                Nothing -> pure BadRequest
+                Just newTool -> do
+                    id <- H.addTool conn userId newTool
+                    -- TODO: create a better message
+                    pure $ Created (UUID.toLazyASCIIBytes id)
+
+        -- TODO: refactor
+        Put (Just id) -> do
+            maybeUpdateTool <- fmap D.decodeUpdateTool (strictRequestBody req)
+            print maybeUpdateTool
+            case maybeUpdateTool of
+                Nothing -> pure BadRequest
+                Just updateTool -> do
                     case UUID.fromText id of
-                    Nothing -> textResponseLBS respond status400 "BAD"
-                    Just id -> do
-                        tool <- H.getTool conn userId id
-                        let toolDecoded = fmap D.encodeTool tool
+                        Nothing -> pure BadRequest
+                        Just id -> do
+                            maybeTool <- H.getTool conn userId id
+                            case maybeTool of
+                                Nothing -> pure BadRequest
+                                Just tool -> do
+                                    let (tagsToAdd, tagsToRemove, payload) = D.getUpdateInfo tool updateTool
+                                    H.updateTool conn userId payload tagsToAdd tagsToRemove
+                                    -- TODO: create a better message
+                                    pure $ Ok "tool updated"
 
-                        case toolDecoded of
-                            Nothing -> textResponseLBS respond status404 "Not Found"
-                            Just tool -> jsonResponse respond status200 tool
+        Put Nothing -> pure BadRequest
 
-                Post -> do
-                    print "post"
-                    maybeNewTool <- fmap D.decodeNewTool (strictRequestBody req)
-                    print maybeNewTool
-                    case maybeNewTool of
-                        Nothing -> textResponseLBS respond status400 "BAD"
-                        Just newTool -> do
-                            id <- H.addTool conn userId newTool
-                            textResponseLBS respond status200 $ UUID.toLazyASCIIBytes id
+        Delete (Just id) -> 
+            case UUID.fromText id of
+            Nothing -> pure BadRequest
+            Just id -> do
+                H.removeToolById conn userId id
+                pure NoContent
 
-                Put (Just id) -> do
-                    print "put"
-                    maybeUpdateTool <- fmap D.decodeUpdateTool (strictRequestBody req)
-                    print maybeUpdateTool
-                    case maybeUpdateTool of
-                        Nothing -> textResponseLBS respond status400 "BAD"
-                        Just updateTool -> do
-                            case UUID.fromText id of
-                                Nothing -> textResponseLBS respond status400 "BAD"
-                                Just id -> do
-                                    maybeTool <- H.getTool conn userId id
-                                    case maybeTool of
-                                        Just tool -> do
-                                            let (tagsToAdd, tagsToRemove, payload) = D.getUpdateInfo tool updateTool
-                                            print tagsToAdd
-                                            print tagsToRemove
-                                            H.updateTool conn userId payload tagsToAdd tagsToRemove
-                                            textResponseLBS respond status200 "OK"
-                                        Nothing -> textResponseLBS respond status400 "BAD"
+        Delete Nothing -> pure BadRequest
 
-                Put Nothing -> textResponseLBS respond status400 "BAD"
-
-                Delete (Just id) -> 
-                    case UUID.fromText id of
-                    Nothing -> textResponseLBS respond status400 "BAD"
-                    Just id -> do
-                        H.removeToolById conn userId id
-                        textResponseLBS respond status204 ""
-
-                Delete Nothing -> textResponseLBS respond status400 "BAD"
-
-                _ -> respond $ responseLBS status405 [] "Not Implemented"
+        _ -> pure MethodNotAllowed
