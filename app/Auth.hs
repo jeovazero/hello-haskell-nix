@@ -2,7 +2,7 @@
 module Auth (authRouter, jwtMiddleware) where
 
 import Network.HTTP.Types (hAuthorization, status200, status400, status401, status405)
-import Lib.Utils (
+import Lib.Utils (AppResult(..), appResponse, 
     Method(..),
     jsonResponse,
     textResponse,
@@ -13,8 +13,10 @@ import Lib.Repository.Users.Data (decodeUserCredentials, UserCredentials(..))
 import qualified Lib.Repository.Users.Handler as H
 import qualified Lib.JWT as JWT
 import qualified Data.UUID as UUID
-import qualified Data.Text as Text
-import qualified Data.Text.Encoding as TextEnc
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Encoding as TE
+import qualified Data.Text.Lazy.Encoding as TLE
 import qualified Data.Vault.Lazy as V
 import Data.Word8 (isSpace, toLower)
 import qualified Data.ByteString as BS
@@ -26,35 +28,36 @@ import qualified Data.Map as Map
 -- 5 minutes in seconds
 expirationTime = 5 * 60
 
-authRouter :: PGConnection -> Text.Text -> Request -> (Response -> IO b) -> IO b
+authRouter :: PGConnection -> T.Text -> Request -> (Response -> IO b) -> IO b
 authRouter conn secret req respond =
     case parseMethod req of
       Post -> do
         maybeCredentials <- fmap decodeUserCredentials (strictRequestBody req)
         case maybeCredentials of
-            Nothing -> textResponse respond status400 "BAD"
+            Nothing -> appResponse respond BadRequest
             Just credentials -> do
                 userInfo <- H.verifyUserCredentials conn credentials
 
                 case userInfo of
-                    Nothing -> textResponse respond status401 "unauthorized"
+                    Nothing -> appResponse respond Unauthorized
                     Just id -> do
                         let payload = [("id", String $ UUID.toText id)]
                         token <- JWT.encode secret expirationTime payload
-                        textResponse respond status200 (TextEnc.encodeUtf8 token)
+                        let lToken = TLE.encodeUtf8 $ TL.fromStrict token
+                        appResponse respond $ Ok lToken
 
       _ -> respond $ responseLBS status405 [] ""
 
-jwtMiddleware :: Text.Text -> (V.Key (Map.Map Text.Text Value) -> Application) -> Application
+jwtMiddleware :: T.Text -> (V.Key (Map.Map T.Text Value) -> Application) -> Application
 jwtMiddleware secret app req respond =
     case lookup hAuthorization (requestHeaders req) of
-        Nothing -> textResponse respond status401 "unauthorized"
+        Nothing -> appResponse respond Unauthorized
         Just text -> do
             key <- V.newKey
             let (bearer, token) = BS.break isSpace text
             guard (BS.map toLower bearer == "bearer")
             let token' = BS.dropWhile isSpace token
-            maybePayload <- JWT.decode secret (TextEnc.decodeUtf8 token')
+            maybePayload <- JWT.decode secret (TE.decodeUtf8 token')
             case maybePayload of
                 Just payload -> do
                     print payload
@@ -62,4 +65,4 @@ jwtMiddleware secret app req respond =
                     let req' = req { vault = reqVault }
                     app key req' respond
                 Nothing -> do
-                    textResponse respond status401 "unauthorized"
+                    appResponse respond Unauthorized
