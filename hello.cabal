@@ -27,6 +27,7 @@ library
                      , Lib.Database
                      , Lib.Utils
                      , Lib.JWT
+                     , Lib.Exception
   other-modules:       Lib.Repository.Tools.Statements
                      , Lib.Repository.Users.Statements
   build-depends:       base >= 4.13.0 && < 5
