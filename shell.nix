@@ -1,19 +1,34 @@
-{ nixpkgs ? import ./nix/pinnedNix.nix { } }:
 let
+
+  nixpkgs = import ./nix/pinnedNix.nix { };
+
   inherit (nixpkgs) pkgs;
 
   inherit (pkgs)
-    haskell sqitchPg postgresql_12 cabal2nix hlint ghcid cabal-install arion;
+    haskell sqitchPg postgresql_12 cabal2nix hlint ghcid cabal-install arion
+    stylish-haskell;
 
   haskellPackages = haskell.packages.ghc884;
 
+  # hls doesn't work well with haskell templates
+  # https://github.com/haskell/haskell-language-server/issues/1431
+  ghcide = haskellPackages.ghcide;
+
   project = import ./release.nix { };
-in
-pkgs.stdenv.mkDerivation {
+in pkgs.stdenv.mkDerivation {
   name = "shell";
 
-  buildInputs = project.env.nativeBuildInputs
-    ++ [ cabal-install ghcid hlint arion sqitchPg postgresql_12 cabal2nix haskellPackages.ghcide ];
+  buildInputs = project.env.nativeBuildInputs ++ [
+    cabal-install
+    ghcid
+    hlint
+    arion
+    sqitchPg
+    postgresql_12
+    cabal2nix
+    ghcide
+    stylish-haskell
+  ];
 
   # https://github.com/NixOS/nix/issues/599
   LOCALE_ARCHIVE = "/usr/lib/locale/locale-archive";
