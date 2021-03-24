@@ -1,27 +1,36 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Network.Wai (ResponseReceived, 
-    responseLBS,
-    strictRequestBody,
-    Request,
-    Response)
-import Lib.Utils (
-    Method(..),
-    jsonResponse,
-    textResponse,
-    takeFirstPath,
-    parseMethod)
+import Auth (authRouter, jwtMiddleware)
 import qualified Data.UUID as UUID
-import Network.HTTP.Types (status200, status204, status405, status404, status400)
-import Network.Wai.Handler.Warp (run)
-import Network.Wai.Middleware.RequestLogger (logStdoutDev)
-import Network.Wai.Middleware.AddHeaders (addHeaders)
 import Lib.Database (settings, withDatabase)
-import qualified Lib.Repository.Tools.Handler as H
 import qualified Lib.Repository.Tools.Data as D
+import qualified Lib.Repository.Tools.Handler as H
+import Lib.Utils
+    ( Method(..)
+    , jsonResponse
+    , parseMethod
+    , takeFirstPath
+    , textResponse
+    )
+import Network.HTTP.Types
+    ( status200
+    , status204
+    , status400
+    , status404
+    , status405
+    )
+import Network.Wai
+    ( Request
+    , Response
+    , ResponseReceived
+    , responseLBS
+    , strictRequestBody
+    )
+import Network.Wai.Handler.Warp (run)
+import Network.Wai.Middleware.AddHeaders (addHeaders)
+import Network.Wai.Middleware.RequestLogger (logStdoutDev)
 import Tools (toolsRouter)
 import Users (usersRouter)
-import Auth (authRouter, jwtMiddleware)
 
 helloWeb = "{\"Hello\":\"Web\"}"
 
@@ -29,7 +38,7 @@ secret = "dumb-secret"
 
 -- TODO: add a custom exception handler
 app :: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
-app req respond = 
+app req respond =
     withDatabase settings $ \conn ->
         case takeFirstPath req of
           Just ("tools", req') -> jwtMiddleware secret (toolsRouter conn) req' respond

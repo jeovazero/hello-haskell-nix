@@ -1,16 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Users (usersRouter) where
 
-import Network.HTTP.Types (status200, status400, status405)
-import Lib.Utils (
-    Method(..),
-    jsonResponse,
-    textResponseLBS,
-    takeFirstPath,
-    parseMethod)
+import qualified Data.UUID as UUID
 import qualified Lib.Repository.Users.Data as D
 import qualified Lib.Repository.Users.Handler as H
-import qualified Data.UUID as UUID
+import Lib.Utils
+    ( Method(..)
+    , jsonResponse
+    , parseMethod
+    , takeFirstPath
+    , textResponseLBS
+    )
+import Network.HTTP.Types (status200, status400, status405)
 import Network.Wai (responseLBS, strictRequestBody)
 
 

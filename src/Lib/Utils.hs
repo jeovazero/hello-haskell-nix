@@ -10,21 +10,33 @@ module Lib.Utils (
     AppResult(..),
     appResponse) where
 
+import Data.Aeson (encode, object, (.=))
+import Data.ByteString.Lazy (ByteString, fromStrict, toStrict)
 import Data.Text (Text)
-import Network.Wai (
-    Response, 
-    Application,
-    Request,
-    responseLBS,
-    pathInfo,
-    requestMethod)
-import Data.ByteString.Lazy (toStrict, fromStrict, ByteString)
-import Network.HTTP.Types.Status (status500, status501, status204, status201, status405, status404, status400, status200, status401, Status)
-import Data.Aeson (object, encode, (.=))
-import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Encoding as TEnc
+import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TLEnc
 import Lib.Exception (AppException)
+import Network.HTTP.Types.Status
+    ( Status
+    , status200
+    , status201
+    , status204
+    , status400
+    , status401
+    , status404
+    , status405
+    , status500
+    , status501
+    )
+import Network.Wai
+    ( Application
+    , Request
+    , Response
+    , pathInfo
+    , requestMethod
+    , responseLBS
+    )
 
 data ContentType = PlainText | JSON deriving (Eq, Show)
 data AppResponse = AppResponse Status ContentType ByteString
@@ -48,15 +60,15 @@ errorMessage message =
 decodeAppResponse :: AppResult -> AppResponse
 decodeAppResponse appResponse =
     case appResponse of
-        Ok content -> 
+        Ok content ->
             AppResponse status200 JSON content
-        Created content -> 
+        Created content ->
             AppResponse status201 PlainText content
-        NoContent -> 
+        NoContent ->
             AppResponse status204 PlainText ""
         BadRequest ->
             AppResponse status400 JSON (errorMessage "Bad Request")
-        Unauthorized -> 
+        Unauthorized ->
             AppResponse status401 JSON (errorMessage "Unauthorized")
         NotFound ->
             AppResponse status404 JSON (errorMessage "Not Found")
@@ -80,8 +92,8 @@ appResponse respond response = do
               message
 
 takeFirstPath req = _takeFirst $ pathInfo req
-    where _takeFirst []              = Nothing
-          _takeFirst (path:newPath)  = Just (path, req { pathInfo = newPath })
+    where _takeFirst []             = Nothing
+          _takeFirst (path:newPath) = Just (path, req { pathInfo = newPath })
 
 jsonResponse respond status content =
   respond $ responseLBS

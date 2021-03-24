@@ -13,9 +13,9 @@ module Lib.Database (
     withErrorHandler,
     IODB) where
 
-import  Database.PostgreSQL.Typed as PG
-import qualified Network.Socket as Net
 import qualified Control.Exception as C
+import Database.PostgreSQL.Typed as PG
+import qualified Network.Socket as Net
 
 type IODB a = IO (Either C.SomeException a)
 

@@ -1,33 +1,39 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Tools (toolsRouter) where
 
+import Control.Exception (Exception)
+import Control.Monad (guard)
+import Data.Aeson (Value(String))
+import Data.ByteString.Lazy (ByteString)
+import qualified Data.Map as Map
+import Data.Maybe (isJust)
+import Data.Text
+import Data.UUID (UUID)
 import qualified Data.UUID as UUID
+import qualified Data.Vault.Lazy as V
+import Lib.Database (PGConnection)
+import Lib.Exception (appCatch)
 import qualified Lib.Repository.Tools.Data as D
 import qualified Lib.Repository.Tools.Handler as H
-import Lib.Exception (appCatch)
-import Network.Wai (vault, 
-    Response,
-    Request, 
-    responseLBS,
-    strictRequestBody)
-import Network.HTTP.Types (status401, status200, status204, status405, status404, status400)
-import Lib.Utils (appResponse,AppResult(..) ,
-    Method(..),
-    jsonResponse,
-    textResponseLBS,
-    takeFirstPath,
-    parseMethod)
-import Lib.Database (PGConnection)
-import qualified Data.Map as Map
-import qualified Data.Vault.Lazy as V
-import Data.Text
-import Data.Aeson (Value(String))
-import Data.Maybe (isJust)
-import Control.Monad (guard)
-import Data.UUID (UUID)
-import Control.Exception (Exception)
-import Data.ByteString.Lazy (ByteString)
+import Lib.Utils
+    ( AppResult(..)
+    , Method(..)
+    , appResponse
+    , jsonResponse
+    , parseMethod
+    , takeFirstPath
+    , textResponseLBS
+    )
+import Network.HTTP.Types
+    ( status200
+    , status204
+    , status400
+    , status401
+    , status404
+    , status405
+    )
 import Network.HTTP.Types.Status (Status)
+import Network.Wai (Request, Response, responseLBS, strictRequestBody, vault)
 
 uuidFromString :: Value -> Maybe UUID
 uuidFromString (String id) = UUID.fromText id
@@ -46,7 +52,7 @@ toolsRouter conn key req respond = do
             appResult <- appCatch $ toolsResolver conn userId req
             case appResult of
                 Right result -> appResponse respond result
-                Left err -> appResponse respond $ Exceptional err
+                Left err     -> appResponse respond $ Exceptional err
 
 toolsResolver :: PGConnection -> UUID -> Request -> IO AppResult
 toolsResolver conn userId req = do
@@ -63,7 +69,7 @@ toolsResolver conn userId req = do
                     tool <- H.getTool conn userId id
                     let toolDecoded = fmap D.encodeTool tool
                     case toolDecoded of
-                        Nothing -> pure $ NotFound
+                        Nothing   -> pure $ NotFound
                         Just tool -> pure $ Ok tool
 
         Post -> do
@@ -97,7 +103,7 @@ toolsResolver conn userId req = do
 
         Put Nothing -> pure BadRequest
 
-        Delete (Just id) -> 
+        Delete (Just id) ->
             case UUID.fromText id of
             Nothing -> pure BadRequest
             Just id -> do

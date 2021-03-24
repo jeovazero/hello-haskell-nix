@@ -1,6 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
 
 module Lib.Repository.Tools.Handler (
     addTool,
@@ -9,17 +9,17 @@ module Lib.Repository.Tools.Handler (
     getTools,
     getTool
 ) where
+import qualified Control.Exception as C
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
-import qualified Lib.Repository.Tools.Statements as S
-import qualified Control.Exception as C
 import Data.UUID (UUID)
-import Database.PostgreSQL.Typed (pgQuery, pgTransaction, PGConnection, PGError)
-import Lib.Repository.Tools.Data (Tool(..), NewTool(..))
-import Lib.Exception (headOrThrow, AppException(..), AppExceptionType(..))
+import Database.PostgreSQL.Typed (PGConnection, PGError, pgQuery, pgTransaction)
+import Lib.Exception (AppException(..), AppExceptionType(..), headOrThrow)
+import Lib.Repository.Tools.Data (NewTool(..), Tool(..))
+import qualified Lib.Repository.Tools.Statements as S
 
 safeHead :: [a] -> Maybe a
-safeHead [] = Nothing
+safeHead []    = Nothing
 safeHead (x:_) = Just x
 
 addTool :: PGConnection -> UUID -> NewTool -> IO UUID

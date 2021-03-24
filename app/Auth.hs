@@ -1,29 +1,47 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Auth (authRouter, jwtMiddleware) where
 
-import Network.HTTP.Types (hAuthorization, status200, status400, status401, status405)
-import Lib.Utils (AppResult(..), appResponse, 
-    Method(..),
-    jsonResponse,
-    textResponse,
-    takeFirstPath,
-    parseMethod)
+import Control.Monad (guard)
 import Data.Aeson (Value(String))
-import Lib.Repository.Users.Data (decodeUserCredentials, UserCredentials(..))
-import qualified Lib.Repository.Users.Handler as H
-import qualified Lib.JWT as JWT
-import qualified Data.UUID as UUID
+import qualified Data.ByteString as BS
+import qualified Data.Map as Map
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Encoding as TE
+import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TLE
+import qualified Data.UUID as UUID
 import qualified Data.Vault.Lazy as V
 import Data.Word8 (isSpace, toLower)
-import qualified Data.ByteString as BS
-import Network.Wai (vault, Application, requestHeaders, Middleware, Request, Response, responseLBS, strictRequestBody)
 import Lib.Database (PGConnection)
-import Control.Monad (guard)
-import qualified Data.Map as Map
+import qualified Lib.JWT as JWT
+import Lib.Repository.Users.Data (UserCredentials(..), decodeUserCredentials)
+import qualified Lib.Repository.Users.Handler as H
+import Lib.Utils
+    ( AppResult(..)
+    , Method(..)
+    , appResponse
+    , jsonResponse
+    , parseMethod
+    , takeFirstPath
+    , textResponse
+    )
+import Network.HTTP.Types
+    ( hAuthorization
+    , status200
+    , status400
+    , status401
+    , status405
+    )
+import Network.Wai
+    ( Application
+    , Middleware
+    , Request
+    , Response
+    , requestHeaders
+    , responseLBS
+    , strictRequestBody
+    , vault
+    )
 
 -- 5 minutes in seconds
 expirationTime = 5 * 60

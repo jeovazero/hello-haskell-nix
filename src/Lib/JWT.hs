@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Lib.JWT (decode, encode) where
 
+import Control.Monad (guard)
+import Data.Aeson (Value)
+import Data.Map as Map
+import Data.Text (Text)
+import Data.Time.Clock.POSIX (getPOSIXTime)
 import Prelude hiding (exp)
 import Web.JWT hiding (decode)
-import Data.Text (Text)
-import Data.Aeson (Value)
-import Data.Time.Clock.POSIX (getPOSIXTime)
-import Data.Map as Map
-import Control.Monad (guard)
 
 headerJwt :: JOSEHeader
 headerJwt = JOSEHeader {

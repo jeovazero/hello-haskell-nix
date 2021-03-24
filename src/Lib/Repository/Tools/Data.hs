@@ -1,9 +1,9 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DataKinds #-} 
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TypeApplications      #-}
 module Lib.Repository.Tools.Data (
     Tool(..),
     NewTool(..),
@@ -16,36 +16,42 @@ module Lib.Repository.Tools.Data (
     encodeTools
 ) where
 
-import Prelude hiding (id)
-import Data.UUID (UUID)
-import Data.ByteString.Lazy (ByteString)
-import Data.Text (Text)
 import Data.Aeson
 import Data.Aeson.Types (typeMismatch)
-import GHC.Generics (Generic)
-import qualified Data.Set as Set
+import Data.ByteString.Lazy (ByteString)
 import Data.Maybe (fromMaybe)
+import qualified Data.Set as Set
+import Data.Text (Text)
+import Data.UUID (UUID)
+import GHC.Generics (Generic)
 import GHC.Records (getField)
+import Prelude hiding (id)
 
 
-data Tool = Tool {
-  id :: UUID,
-  name :: Text,
-  description :: Maybe Text,
-  tags :: [Text]
-} deriving (Show, Generic)
+data Tool
+  = Tool
+      { id          :: UUID
+      , name        :: Text
+      , description :: Maybe Text
+      , tags        :: [Text]
+      }
+  deriving (Show, Generic)
 
-data NewTool = NewTool {
-  name :: Text,
-  description :: Maybe Text,
-  tags :: [Text]
-} deriving (Show, Generic)
+data NewTool
+  = NewTool
+      { name        :: Text
+      , description :: Maybe Text
+      , tags        :: [Text]
+      }
+  deriving (Show, Generic)
 
-data UpdateTool = UpdateTool {
-  name :: Maybe Text,
-  description :: Maybe Text,
-  tags :: Maybe [Text]
-} deriving (Show, Generic)
+data UpdateTool
+  = UpdateTool
+      { name        :: Maybe Text
+      , description :: Maybe Text
+      , tags        :: Maybe [Text]
+      }
+  deriving (Show, Generic)
 
 
 instance FromJSON NewTool where
@@ -87,11 +93,13 @@ decodeNewTool = decode
 decodeUpdateTool :: ByteString -> Maybe UpdateTool
 decodeUpdateTool = decode
 
-data UpdateInfo = UpdateInfo {
-  tagsToAdd :: [Text],
-  tagsToRemove :: [Text],
-  payload :: Tool
-} deriving (Show)
+data UpdateInfo
+  = UpdateInfo
+      { tagsToAdd    :: [Text]
+      , tagsToRemove :: [Text]
+      , payload      :: Tool
+      }
+  deriving (Show)
 
 -- old = ['A', 'B', 'C']
 -- current = ['B', 'D', 'E', 'E', 'D']
@@ -99,7 +107,7 @@ data UpdateInfo = UpdateInfo {
 -- to remove: ['A', 'C']
 -- to add: ['D', 'E']
 
-diff [] [] = ([], [])
+diff [] []       = ([], [])
 diff old current = diff' current (Set.fromList old) Set.empty []
 
 diff' :: Ord a => [a] -> Set.Set a -> Set.Set a -> [a] -> ([a], [a])

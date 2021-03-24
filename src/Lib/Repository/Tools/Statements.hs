@@ -1,8 +1,8 @@
+{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE QuasiQuotes #-}
- 
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+
 module Lib.Repository.Tools.Statements (
     addTool,
     getTool,
@@ -12,15 +12,15 @@ module Lib.Repository.Tools.Statements (
     removeTags,
     addTags
 ) where
-import Prelude hiding (words)
-import Database.PostgreSQL.Typed (pgQuery, pgSQL, PGConnection)
-import Database.PostgreSQL.Typed.Types
+import Data.ByteString.Char8 (ByteString)
+import Data.Text (Text)
+import Data.UUID (UUID)
+import Database.PostgreSQL.Typed (PGConnection, pgQuery, pgSQL)
 import Database.PostgreSQL.Typed.Array
 import Database.PostgreSQL.Typed.Query (PGSimpleQuery)
-import Data.UUID (UUID)
-import Data.Text (Text)
-import Data.ByteString.Char8 (ByteString)
-import Lib.Database (useTPGDatabase, settings)
+import Database.PostgreSQL.Typed.Types
+import Lib.Database (settings, useTPGDatabase)
+import Prelude hiding (words)
 
 useTPGDatabase settings
 

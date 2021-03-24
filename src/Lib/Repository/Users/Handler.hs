@@ -1,25 +1,25 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
 
 module Lib.Repository.Users.Handler (
     addUser,
     verifyUserCredentials
 ) where
-import qualified Lib.Repository.Users.Statements as S
 import qualified Control.Exception as C
-import Data.UUID (UUID)
-import Data.Text (Text)
-import Database.PostgreSQL.Typed (pgTransaction, PGConnection)
-import Lib.Repository.Users.Data (NewUser(..), UserCredentials(..))
 import Data.Password.Argon2 as Argon
+import Data.Text (Text)
+import Data.UUID (UUID)
+import Database.PostgreSQL.Typed (PGConnection, pgTransaction)
+import Lib.Repository.Users.Data (NewUser(..), UserCredentials(..))
+import qualified Lib.Repository.Users.Statements as S
 
 -- WTF
 headOrThrow :: [a] -> IO a
-headOrThrow [] = C.throwIO $ C.ErrorCall "empty list"
+headOrThrow []    = C.throwIO $ C.ErrorCall "empty list"
 headOrThrow (x:_) = pure x
 
-safeHead [] = Nothing
+safeHead []    = Nothing
 safeHead (x:_) = Just x
 
 argonHash password = do
@@ -43,6 +43,6 @@ verifyUserCredentials conn UserCredentials{ email, password = rawPassword } = do
             argonPassword = Argon.mkPassword rawPassword
           in
           case Argon.checkPassword argonPassword (Argon.PasswordHash hashPassword) of
-              Argon.PasswordCheckFail -> Nothing
+              Argon.PasswordCheckFail    -> Nothing
               Argon.PasswordCheckSuccess -> Just id
 

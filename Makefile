@@ -6,6 +6,9 @@ dev:
 build:
 	nix-build release.nix
 
+format:
+	stylish-haskell -irv .
+
 cabal2nix:
 	cabal2nix . > default.nix
 
