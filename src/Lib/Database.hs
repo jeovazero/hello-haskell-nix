@@ -13,6 +13,7 @@ module Lib.Database (
     withErrorHandler,
     IODB) where
 
+import Control.Exception (bracket)
 import qualified Control.Exception as C
 import Database.PostgreSQL.Typed as PG
 import qualified Network.Socket as Net
@@ -34,6 +35,7 @@ withErrorHandler effect = do
         ]
 
 -- TODO: Get the config from ENV
+settings :: PGDatabase
 settings = defaultPGDatabase {
     PG.pgDBAddr = Right $ Net.SockAddrInet 5444 (Net.tupleToHostAddress (127, 0, 0, 1))
   , PG.pgDBName = "dev"
@@ -41,14 +43,11 @@ settings = defaultPGDatabase {
   , PG.pgDBPass = "pass"
 }
 
+openConnection :: PGDatabase -> IO PGConnection
 openConnection = PG.pgConnect
 
+closeConnection :: PGConnection -> IO ()
 closeConnection = PG.pgDisconnect
 
-withDatabase :: PG.PGDatabase -> (PGConnection -> IO a) -> IO a
-withDatabase config effect = do
-    -- TODO: use bracket
-    conn <- pgConnect config
-    r <- effect conn
-    closeConnection conn
-    return r
+withDatabase :: PGDatabase -> (PGConnection -> IO c) -> IO c
+withDatabase config effect = bracket (pgConnect config) (closeConnection) effect

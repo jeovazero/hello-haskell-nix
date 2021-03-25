@@ -128,7 +128,7 @@ merge tool utool =
     Tool {
       id = id tool,
       name = fromMaybe (getField @"name" tool) (getField @"name" utool),
-          description = maybe (getField @"description" tool) Just (getField @"description" utool),
+      description = maybe (getField @"description" tool) Just (getField @"description" utool),
       tags = []
     }
 

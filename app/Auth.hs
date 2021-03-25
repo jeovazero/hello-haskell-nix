@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Auth (authRouter, jwtMiddleware) where
+module Auth (authHandler, jwtMiddleware) where
 
 import Control.Monad (guard)
 import Data.Aeson (Value(String))
@@ -12,11 +12,7 @@ import qualified Data.Text.Lazy.Encoding as TLE
 import qualified Data.UUID as UUID
 import qualified Data.Vault.Lazy as V
 import Data.Word8 (isSpace, toLower)
-import Lib.Database (PGConnection)
-import qualified Lib.JWT as JWT
-import Lib.Repository.Users.Data (UserCredentials(..), decodeUserCredentials)
-import qualified Lib.Repository.Users.Handler as H
-import Lib.Utils
+import Lib.Core
     ( AppResult(..)
     , Method(..)
     , appResponse
@@ -25,6 +21,10 @@ import Lib.Utils
     , takeFirstPath
     , textResponse
     )
+import Lib.Database (PGConnection)
+import qualified Lib.JWT as JWT
+import Lib.Repository.Users.Data (UserCredentials(..), decodeUserCredentials)
+import qualified Lib.Repository.Users.Handler as H
 import Network.HTTP.Types
     ( hAuthorization
     , status200
@@ -46,8 +46,8 @@ import Network.Wai
 -- 5 minutes in seconds
 expirationTime = 5 * 60
 
-authRouter :: PGConnection -> T.Text -> Request -> (Response -> IO b) -> IO b
-authRouter conn secret req respond =
+authHandler :: PGConnection -> T.Text -> Request -> (Response -> IO b) -> IO b
+authHandler conn secret req respond =
     case parseMethod req of
       Post -> do
         maybeCredentials <- fmap decodeUserCredentials (strictRequestBody req)

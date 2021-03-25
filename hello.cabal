@@ -25,7 +25,7 @@ library
                      , Lib.Repository.Users.Handler
                      , Lib.Repository.Users.Data
                      , Lib.Database
-                     , Lib.Utils
+                     , Lib.Core
                      , Lib.JWT
                      , Lib.Exception
   other-modules:       Lib.Repository.Tools.Statements
@@ -48,7 +48,7 @@ library
 --
 executable hello
   main-is:            Main.hs
-  other-modules:      Tools, Auth, Users
+  other-modules:      Tools, Auth, Users, App
   -- other-extensions:
   build-depends:       base >= 4.13 && < 5
                      , aeson >= 1.4.7 && < 2

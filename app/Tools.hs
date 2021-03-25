@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Tools (toolsRouter) where
+module Tools (toolsHandler) where
 
 import Control.Exception (Exception)
 import Control.Monad (guard)
@@ -11,11 +11,7 @@ import Data.Text
 import Data.UUID (UUID)
 import qualified Data.UUID as UUID
 import qualified Data.Vault.Lazy as V
-import Lib.Database (PGConnection)
-import Lib.Exception (appCatch)
-import qualified Lib.Repository.Tools.Data as D
-import qualified Lib.Repository.Tools.Handler as H
-import Lib.Utils
+import Lib.Core
     ( AppResult(..)
     , Method(..)
     , appResponse
@@ -24,6 +20,10 @@ import Lib.Utils
     , takeFirstPath
     , textResponseLBS
     )
+import Lib.Database (PGConnection)
+import Lib.Exception (appCatch)
+import qualified Lib.Repository.Tools.Data as D
+import qualified Lib.Repository.Tools.Handler as H
 import Network.HTTP.Types
     ( status200
     , status204
@@ -44,8 +44,8 @@ userIdFromReq key req =
         >>= uuidFromString
 
 -- The tools router
-toolsRouter :: PGConnection -> V.Key (Map.Map Text Value) -> Request -> (Response -> IO b) -> IO b
-toolsRouter conn key req respond = do
+toolsHandler :: PGConnection -> V.Key (Map.Map Text Value) -> Request -> (Response -> IO b) -> IO b
+toolsHandler conn key req respond = do
     case userIdFromReq key req of
         Nothing -> appResponse respond Unauthorized
         Just userId -> do

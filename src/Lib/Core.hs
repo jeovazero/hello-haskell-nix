@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Lib.Utils (
+module Lib.Core (
     jsonResponse,
     textResponseLBS,
     textResponse,
@@ -8,7 +8,13 @@ module Lib.Utils (
     parseMethod,
     ContentType(..),
     AppResult(..),
-    appResponse) where
+    appResponse,
+    makeRoutes,
+    (/*),
+    (/~),
+    (-->),
+    routeTo,
+    fallbackRoute) where
 
 import Data.Aeson (encode, object, (.=))
 import Data.ByteString.Lazy (ByteString, fromStrict, toStrict)
@@ -82,6 +88,8 @@ decodeAppResponse appResponse =
         _ ->
             AppResponse status500 JSON (errorMessage "Internal Server Error")
 
+
+appResponse :: (Response -> t) -> AppResult -> t
 appResponse respond response = do
     let (AppResponse status contentType message) = decodeAppResponse response
     let contentType' | contentType == JSON = "application/json"
@@ -128,3 +136,43 @@ parseMethod req = case requestMethod req of
     _        -> NotAllowed
 
     where maybeParam = fst <$> takeFirstPath req
+
+(/~), routeTo :: p -> Application -> (Maybe p, Application)
+(/~) p app = (Just p, app)
+
+infixr 0 /~
+
+routeTo = (/~)
+
+(-->) = ($)
+
+fallbackRoute :: Application -> (Maybe a, Application)
+fallbackRoute app = (Nothing, app)
+
+(/*) = fallbackRoute
+
+makeRoutes :: [(Maybe Text, Application)] -> Application
+makeRoutes routes req respond =
+    case pathInfo req of
+        (path:rest) ->
+            let
+                option = matchRoute path
+            in
+            case option of
+                Nothing  -> appResponse respond NotFound
+                Just app -> app (req { pathInfo = rest }) respond
+        [] ->
+            let
+                option = matchRoute ""
+            in
+            case option of
+                Nothing  -> appResponse respond NotFound
+                Just app -> app req respond
+    where
+        matchRoute path = foldl (handle path) Nothing routes
+
+        handle _ (Just app) _ = Just app
+        handle _ _ (Nothing, app) = Just app
+        handle path _ (Just routeName, app)
+          | routeName == path = Just app
+          | otherwise = Nothing

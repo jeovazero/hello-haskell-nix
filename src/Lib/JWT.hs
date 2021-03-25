@@ -28,6 +28,7 @@ encode secret expirationTime payload = do
   }
   pure $ encodeSigned key headerJwt claimsSet
 
+decode :: Text -> Text -> IO (Maybe (Map Text Value))
 decode secret token = do
   let jwt = decodeAndVerifySignature (hmacSecret secret) token
   time <- getPOSIXTime

@@ -1,21 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Users (usersRouter) where
+module Users (usersHandler) where
 
 import qualified Data.UUID as UUID
-import qualified Lib.Repository.Users.Data as D
-import qualified Lib.Repository.Users.Handler as H
-import Lib.Utils
+import Lib.Core
     ( Method(..)
     , jsonResponse
     , parseMethod
     , takeFirstPath
     , textResponseLBS
     )
+import qualified Lib.Repository.Users.Data as D
+import qualified Lib.Repository.Users.Handler as H
 import Network.HTTP.Types (status200, status400, status405)
 import Network.Wai (responseLBS, strictRequestBody)
 
 
-usersRouter conn req respond =
+usersHandler conn req respond =
     case parseMethod req of
       Post -> do
         maybeNewUser <- fmap D.decodeNewUser (strictRequestBody req)
