@@ -9,6 +9,9 @@ build:
 format:
 	stylish-haskell -irv .
 
+specs:
+	runhaskell -isrc:app:test test/Spec.hs
+
 cabal2nix:
 	cabal2nix . > default.nix
 
