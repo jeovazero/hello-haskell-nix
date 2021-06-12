@@ -11,17 +11,11 @@ import Data.Text
 import Data.UUID (UUID)
 import qualified Data.UUID as UUID
 import qualified Data.Vault.Lazy as V
-import Lib.Core
-    ( AppResult(..)
-    , Method(..)
-    , appResponse
-    , jsonResponse
-    , parseMethod
-    , takeFirstPath
-    , textResponseLBS
-    )
+import Lib.Core (AppResult(..), Method(..), appResponse, parseMethod)
 import Lib.Database (PGConnection)
-import Lib.Exception (appCatch)
+import Lib.Exception (   AppException(..)
+    , AppExceptionType(..)
+    , DatabaseErrorType(..), appCatch)
 import qualified Lib.Repository.Tools.Data as D
 import qualified Lib.Repository.Tools.Handler as H
 import Network.HTTP.Types
@@ -52,7 +46,16 @@ toolsHandler conn key req respond = do
             appResult <- appCatch $ toolsResolver conn userId req
             case appResult of
                 Right result -> appResponse respond result
-                Left err     -> appResponse respond $ Exceptional err
+                Left err     -> appResponse respond $ decodeError err
+
+decodeError :: AppException -> AppResult
+decodeError (AppException err) =
+    case err of
+        Unexpected raw -> InternalServerError
+        DatabaseError dbError ->
+            case dbError of
+                Duplicated -> Conflict "The specified tool already exists"
+                Raw msg -> InternalServerError
 
 toolsResolver :: PGConnection -> UUID -> Request -> IO AppResult
 toolsResolver conn userId req = do
