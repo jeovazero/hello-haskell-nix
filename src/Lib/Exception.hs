@@ -1,4 +1,10 @@
-module Lib.Exception (AppException(..), AppExceptionType(..), headOrThrow, appCatch) where
+module Lib.Exception
+    ( AppException(..)
+    , DatabaseErrorType(..)
+    , AppExceptionType(..)
+    , headOrThrow
+    , appCatch
+    ) where
 
 import Control.Exception
     ( Exception
@@ -17,7 +23,12 @@ newtype AppException = AppException {
 
 data AppExceptionType
     = Unexpected String
-    | DatabaseError String
+    | DatabaseError DatabaseErrorType
+    deriving (Show, Eq)
+
+data DatabaseErrorType
+    = Duplicated
+    | Raw String
     deriving (Show, Eq)
 
 instance Exception AppException
@@ -41,5 +52,5 @@ appCatch effect = do
 decodePgError :: PGError -> AppExceptionType
 decodePgError pgError =
     case pgErrorCode pgError of
-      unique_violation -> DatabaseError "Duplicado"
-      _                -> DatabaseError (show pgError)
+      unique_violation -> DatabaseError Duplicated
+      _                -> DatabaseError $ Raw (show pgError)
