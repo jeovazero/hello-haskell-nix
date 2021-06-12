@@ -6,8 +6,8 @@ import Lib.Core (fallbackRoute, jsonResponse, makeRoutes, (-->), (/*), (/~))
 import Lib.Database (PGConnection)
 import Network.HTTP.Types (status200)
 import Network.Wai (Application)
+import Register (registerHandler)
 import Tools (toolsHandler)
-import Users (usersHandler)
 
 helloWeb = "{\"Hello\":\"Web\"}"
 
@@ -17,8 +17,8 @@ secret = "dumb-secret"
 app :: PGConnection -> Application
 app conn
     = makeRoutes
-        [ (/~) "tools" --> jwtMiddleware secret (toolsHandler conn)
-        , (/~) "users" --> usersHandler conn
-        , (/~) "auth"  --> authHandler conn secret
-        , (/*)         --> \_ respond -> jsonResponse respond status200 helloWeb
+        [ (/~) "register" --> registerHandler conn
+        , (/~) "tools"    --> jwtMiddleware secret (toolsHandler conn)
+        , (/~) "auth"     --> authHandler conn secret
+        , (/*)            --> \_ respond -> jsonResponse respond status200 helloWeb
         ]

@@ -48,7 +48,7 @@ library
 --
 executable hello
   main-is:            Main.hs
-  other-modules:      Tools, Auth, Users, App
+  other-modules:      Tools, Auth, Register, App
   -- other-extensions:
   build-depends:       base >= 4.13 && < 5
                      , aeson >= 1.4.7 && < 2
