@@ -32,6 +32,7 @@ import Network.HTTP.Types.Status
     , status401
     , status404
     , status405
+    , status409
     , status500
     , status501
     )
@@ -51,12 +52,13 @@ data AppResult
     | BadRequest
     | NotFound
     | NoContent
+    | Conflict ByteString
     | Created ByteString
     | MethodNotAllowed
     | NotImplemented
     | InternalServerError
     | Unauthorized
-    | Exceptional AppException
+    | Exceptional AppException ByteString
     deriving (Eq, Show)
 
 errorMessage :: ByteString -> ByteString
@@ -80,11 +82,13 @@ decodeAppResponse appResponse =
             AppResponse status404 JSON (errorMessage "Not Found")
         MethodNotAllowed ->
             AppResponse status405 JSON (errorMessage "Method Not Allowed")
+        Conflict msg ->
+            AppResponse status409 JSON msg
         NotImplemented ->
             AppResponse status501 JSON (errorMessage "Not Implemented")
-        Exceptional err ->
+        Exceptional err msg ->
             -- TODO: decode the exceptional situations
-            AppResponse status500 JSON (errorMessage (TLEnc.encodeUtf8 . TL.pack $ show err))
+            AppResponse status500 JSON (errorMessage msg)
         _ ->
             AppResponse status500 JSON (errorMessage "Internal Server Error")
 
