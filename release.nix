@@ -1,19 +1,6 @@
-{ nixpkgs ? import ./nix/pinnedNix.nix { config = { allowBroken = true; }; } }:
+{ nixpkgs ? import ./nix/pinnedNix.nix { } }:
 let
-
   inherit (nixpkgs) pkgs;
-
-  ghc884 = pkgs.haskell.packages.ghc884;
-  dontCheck = pkgs.haskell.lib.dontCheck;
-
-  password-types = dontCheck (ghc884.callPackage ./nix/password-types.nix {});
-  password = ghc884.callPackage ./nix/password.nix { inherit password-types; };
-
-  myPkgs = ghc884.override {
-    overrides = self: super: {
-      password = dontCheck password;
-    };
-  };
-
+  haskellPkgs = pkgs.haskell.packages.ghc8104;
 in
-myPkgs.callCabal2nix "hello" ./. { }
+  haskellPkgs.callCabal2nix "hello" ./. { }

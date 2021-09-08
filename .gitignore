@@ -4,3 +4,5 @@ result/
 result
 image
 dist-newstyle/
+.direnv
+.envrc

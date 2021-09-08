@@ -8,7 +8,7 @@ let
     haskell sqitchPg postgresql_12 cabal2nix hlint ghcid cabal-install arion
     stylish-haskell;
 
-  haskellPackages = haskell.packages.ghc884;
+  haskellPackages = haskell.packages.ghc8104;
 
   # hls doesn't work well with haskell templates
   # https://github.com/haskell/haskell-language-server/issues/1431
