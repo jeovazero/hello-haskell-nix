@@ -10,10 +10,6 @@ let
 
   haskellPackages = haskell.packages.ghc8104;
 
-  # hls doesn't work well with haskell templates
-  # https://github.com/haskell/haskell-language-server/issues/1431
-  ghcide = haskellPackages.ghcide;
-
   project = import ./release.nix { };
 in pkgs.stdenv.mkDerivation {
   name = "shell";
@@ -26,7 +22,6 @@ in pkgs.stdenv.mkDerivation {
     sqitchPg
     postgresql_12
     cabal2nix
-    ghcide
     stylish-haskell
   ];
 
