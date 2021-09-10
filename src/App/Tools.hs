@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Tools (toolsHandler) where
+module App.Tools (toolsHandler) where
 
 import Control.Exception (Exception)
 import Control.Monad (guard)
@@ -72,7 +72,7 @@ toolsResolver conn userId req = do
                     tool <- H.getTool conn userId id
                     let toolDecoded = fmap D.encodeTool tool
                     case toolDecoded of
-                        Nothing   -> pure $ NotFound
+                        Nothing   -> pure NotFound
                         Just tool -> pure $ Ok tool
 
         Post -> do

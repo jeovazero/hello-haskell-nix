@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Auth (authHandler, jwtMiddleware) where
+module App.Auth (authHandler, jwtMiddleware) where
 
 import Control.Monad (guard)
 import Data.Aeson (Value(String))

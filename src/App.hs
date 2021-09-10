@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 module App (app) where
 
-import Auth (authHandler, jwtMiddleware)
+import App.Auth (authHandler, jwtMiddleware)
 import Lib.Core (fallbackRoute, jsonResponse, makeRoutes, (-->), (/*), (/~))
 import Lib.Database (PGConnection)
 import Network.HTTP.Types (status200)
 import Network.Wai (Application)
-import Register (registerHandler)
-import Tools (toolsHandler)
+import App.Register (registerHandler)
+import App.Tools (toolsHandler)
 
 helloWeb = "{\"Hello\":\"Web\"}"
 

@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Register (registerHandler) where
+module App.Register (registerHandler) where
 
 import qualified Data.ByteString
 import qualified Data.UUID as UUID
