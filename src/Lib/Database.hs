@@ -21,7 +21,7 @@ import qualified Network.Socket as Net
 type IODB a = IO (Either C.SomeException a)
 
 hDBException :: PGError -> IO ()
-hDBException err = print err
+hDBException = print
 
 hSomeException :: C.SomeException -> IO ()
 hSomeException err = print $ show err ++ " 234"
@@ -50,4 +50,4 @@ closeConnection :: PGConnection -> IO ()
 closeConnection = PG.pgDisconnect
 
 withDatabase :: PGDatabase -> (PGConnection -> IO c) -> IO c
-withDatabase config effect = bracket (pgConnect config) (closeConnection) effect
+withDatabase config = bracket (pgConnect config) closeConnection

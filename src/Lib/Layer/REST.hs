@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Lib.Core (
+module Lib.Layer.REST (
     jsonResponse,
     textResponseLBS,
     textResponse,
     takeFirstPath,
-    Method(..),
+    RESTMessage(..),
     parseMethod,
     ContentType(..),
-    AppResult(..),
-    appResponse,
+    RESTResult(..),
+    restResponse,
     makeRoutes,
     (/*),
     (/~),
@@ -46,8 +46,10 @@ import Network.Wai
     )
 
 data ContentType = PlainText | JSON deriving (Eq, Show)
-data AppResponse = AppResponse Status ContentType ByteString
-data AppResult
+
+data RESTResponse = RESTResponse Status ContentType ByteString
+
+data RESTResult
     = Ok ByteString
     | BadRequest
     | NotFound
@@ -65,37 +67,36 @@ errorMessage :: ByteString -> ByteString
 errorMessage message =
     encode $ object ["message" .= TEnc.decodeUtf8 (toStrict message)]
 
-decodeAppResponse :: AppResult -> AppResponse
-decodeAppResponse appResponse =
-    case appResponse of
+decodeRESTResponse :: RESTResult -> RESTResponse
+decodeRESTResponse restResponse =
+    case restResponse of
         Ok content ->
-            AppResponse status200 JSON content
+            RESTResponse status200 JSON content
         Created content ->
-            AppResponse status201 PlainText content
+            RESTResponse status201 PlainText content
         NoContent ->
-            AppResponse status204 PlainText ""
+            RESTResponse status204 PlainText ""
         BadRequest ->
-            AppResponse status400 JSON (errorMessage "Bad Request")
+            RESTResponse status400 JSON (errorMessage "Bad Request")
         Unauthorized ->
-            AppResponse status401 JSON (errorMessage "Unauthorized")
+            RESTResponse status401 JSON (errorMessage "Unauthorized")
         NotFound ->
-            AppResponse status404 JSON (errorMessage "Not Found")
+            RESTResponse status404 JSON (errorMessage "Not Found")
         MethodNotAllowed ->
-            AppResponse status405 JSON (errorMessage "Method Not Allowed")
+            RESTResponse status405 JSON (errorMessage "Method Not Allowed")
         Conflict msg ->
-            AppResponse status409 JSON msg
+            RESTResponse status409 JSON msg
         NotImplemented ->
-            AppResponse status501 JSON (errorMessage "Not Implemented")
+            RESTResponse status501 JSON (errorMessage "Not Implemented")
         Exceptional err msg ->
             -- TODO: decode the exceptional situations
-            AppResponse status500 JSON (errorMessage msg)
+            RESTResponse status500 JSON (errorMessage msg)
         _ ->
-            AppResponse status500 JSON (errorMessage "Internal Server Error")
+            RESTResponse status500 JSON (errorMessage "Internal Server Error")
 
-
-appResponse :: (Response -> t) -> AppResult -> t
-appResponse respond response = do
-    let (AppResponse status contentType message) = decodeAppResponse response
+restResponse :: (Response -> t) -> RESTResult -> t
+restResponse respond response = do
+    let (RESTResponse status contentType message) = decodeRESTResponse response
     let contentType' | contentType == JSON = "application/json"
                      | otherwise = "text/plain"
     respond $ responseLBS
@@ -103,10 +104,12 @@ appResponse respond response = do
               [("Content-Type", contentType')]
               message
 
+takeFirstPath :: Request -> Maybe (Text, Request)
 takeFirstPath req = _takeFirst $ pathInfo req
     where _takeFirst []             = Nothing
           _takeFirst (path:newPath) = Just (path, req { pathInfo = newPath })
 
+jsonResponse :: (Response -> t) -> Status -> ByteString -> t
 jsonResponse respond status content =
   respond $ responseLBS
             status
@@ -124,22 +127,23 @@ textResponse respond status content = do
     let contentLazy = fromStrict content
     textResponseLBS respond status contentLazy
 
-data Method = GetMany
-            | GetOne Text
-            | Post
-            | Put (Maybe Text)
-            | Delete (Maybe Text)
-            | NotAllowed
+data RESTMessage
+  = GetOne Text
+  | GetMany
+  | Post
+  | Put (Maybe Text)
+  | Delete (Maybe Text)
+  | NotAllowed
 
-parseMethod :: Request -> Method
+parseMethod :: Request -> RESTMessage
 parseMethod req = case requestMethod req of
-    "GET"    -> maybe GetMany GetOne maybeParam
-    "POST"   -> Post
-    "PUT"    -> Put maybeParam
-    "DELETE" -> Delete maybeParam
-    _        -> NotAllowed
+  "GET"    -> maybe GetMany GetOne maybeParam
+  "POST"   -> Post
+  "PUT"    -> Put maybeParam
+  "DELETE" -> Delete maybeParam
+  _        -> NotAllowed
 
-    where maybeParam = fst <$> takeFirstPath req
+  where maybeParam = fmap fst $ takeFirstPath req
 
 (/~), routeTo :: p -> Application -> (Maybe p, Application)
 (/~) p app = (Just p, app)
@@ -153,30 +157,31 @@ routeTo = (/~)
 fallbackRoute :: Application -> (Maybe a, Application)
 fallbackRoute app = (Nothing, app)
 
+(/*) :: Application -> (Maybe a, Application)
 (/*) = fallbackRoute
 
 makeRoutes :: [(Maybe Text, Application)] -> Application
 makeRoutes routes req respond =
-    case pathInfo req of
-        (path:rest) ->
-            let
-                option = matchRoute path
-            in
-            case option of
-                Nothing  -> appResponse respond NotFound
-                Just app -> app (req { pathInfo = rest }) respond
-        [] ->
-            let
-                option = matchRoute ""
-            in
-            case option of
-                Nothing  -> appResponse respond NotFound
-                Just app -> app req respond
-    where
-        matchRoute path = foldl (handle path) Nothing routes
+  case pathInfo req of
+    (path:rest) ->
+      let
+          option = matchRoute path
+      in
+      case option of
+          Nothing  -> restResponse respond NotFound
+          Just app -> app (req { pathInfo = rest }) respond
+    [] ->
+      let
+          option = matchRoute ""
+      in
+      case option of
+          Nothing  -> restResponse respond NotFound
+          Just app -> app req respond
+  where
+    matchRoute path = foldl (handle path) Nothing routes
 
-        handle _ (Just app) _ = Just app
-        handle _ _ (Nothing, app) = Just app
-        handle path _ (Just routeName, app)
-          | routeName == path = Just app
-          | otherwise = Nothing
+    handle _ (Just app) _ = Just app
+    handle _ _ (Nothing, app) = Just app
+    handle path _ (Just routeName, app)
+      | routeName == path = Just app
+      | otherwise = Nothing

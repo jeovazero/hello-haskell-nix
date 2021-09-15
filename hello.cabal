@@ -30,20 +30,20 @@ common deps
 library
   import:              deps
   hs-source-dirs:      src
-  exposed-modules:     App
-                     , App.Auth
-                     , App.Tools
+  exposed-modules:     App                     
                      , App.Register
-                     , Lib.Core
-                     , Lib.Database
-                     , Lib.JWT
+                     , Lib.Persistence
+                     , Lib.Persistence.User
+                     , Lib.Layer.REST
+                     , Lib.Layer.REST.JWT
                      , Lib.Exception
-                     , Lib.Repository.Users.Handler
-                     , Lib.Repository.Users.Data
-                     , Lib.Repository.Tools.Handler
-                     , Lib.Repository.Tools.Data
-  other-modules:       Lib.Repository.Tools.Statements
-                     , Lib.Repository.Users.Statements
+                     , Lib.Domain.User
+                     , Lib.Data.User
+                     , Lib.Database
+  other-modules:     App.Auth
+                     , Lib.Persistence.User.PGInstance
+                     , Lib.Persistence.User.PGStatements
+
   build-depends:       jwt
                      , time
                      , postgresql-typed 

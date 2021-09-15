@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Lib.JWT (decode, encode) where
+module Lib.Layer.REST.JWT (decode, encode) where
 
 import Control.Monad (guard)
 import Data.Aeson (Value)

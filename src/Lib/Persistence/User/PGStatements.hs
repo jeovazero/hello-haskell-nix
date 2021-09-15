@@ -3,11 +3,11 @@
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module Lib.Repository.Users.Statements (
+module Lib.Persistence.User.PGStatements (
     addUser,
-    getUser,
     getUserByEmail
 ) where
+
 import Data.ByteString.Char8 (ByteString)
 import Data.Text (Text)
 import Data.UUID (UUID)
@@ -15,25 +15,13 @@ import Database.PostgreSQL.Typed (PGConnection, pgQuery, pgSQL)
 import Database.PostgreSQL.Typed.Array
 import Database.PostgreSQL.Typed.Query (PGSimpleQuery)
 import Database.PostgreSQL.Typed.Types
-import Lib.Database (settings, useTPGDatabase)
 import Prelude hiding (words)
 
-useTPGDatabase settings
-
-getUser :: PGConnection -> UUID -> IO [(UUID, Text, Text)]
-getUser conn user_id =
-    pgQuery conn [pgSQL|
-        SELECT      user_id,
-                    name,
-                    email
-        FROM        hello.users
-        WHERE user_id = ${user_id}
-    |]
-
-getUserByEmail :: PGConnection -> Text -> IO [(UUID, Text, Text)]
+getUserByEmail :: PGConnection -> Text -> IO [(UUID, Text, Text, Text)]
 getUserByEmail conn email =
     pgQuery conn [pgSQL|
         SELECT      user_id,
+                    name,
                     email,
                     password
         FROM        hello.users

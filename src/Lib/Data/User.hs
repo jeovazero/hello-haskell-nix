@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings     #-}
-module Lib.Repository.Users.Data (
+
+module Lib.Data.User (
     User(..),
     NewUser(..),
     UserCredentials(..),
@@ -10,12 +11,12 @@ module Lib.Repository.Users.Data (
 ) where
 
 import Data.Aeson
+    ( decode, (.:), FromJSON(parseJSON), Value(Object), withText, FromJSONKey )
 import Data.Aeson.Types (typeMismatch)
 import Data.ByteString.Lazy (ByteString)
 import Data.Text (Text)
 import Data.UUID (UUID)
 import GHC.Generics (Generic)
-
 
 data User
   = User
@@ -28,11 +29,11 @@ data User
 
 data NewUser
   = NewUser
-      { name     :: Text
-      , email    :: Text
-      , password :: Text
+      { nName     :: Text
+      , nEmail    :: Text
+      , nPassword :: Text
       }
-  deriving (Show, Generic)
+  deriving (Show)
 
 instance FromJSON NewUser where
     parseJSON (Object obj) =
@@ -42,13 +43,12 @@ instance FromJSON NewUser where
 
     parseJSON invalid = typeMismatch "Object" invalid
 
-
 data UserCredentials
   = UserCredentials
-      { email    :: Text
-      , password :: Text
+      { cEmail    :: Text
+      , cPassword :: Text
       }
-  deriving (Show, Generic)
+  deriving (Show)
 
 instance FromJSON UserCredentials where
     parseJSON (Object obj) =
