@@ -18,6 +18,17 @@ import Lib.Persistence
 import Lib.Exception
 import Data.Maybe
 
+{-
+data UserMessage
+    = AddUser NewUser
+    | VerifyCredentials UserCredentials
+
+data UserResult
+    = VerifiedCredentials (Maybe UUID)
+    | AddedUser UUID
+    | 
+
+-}
 argonHash password = do
     -- using the default parameters
     -- http://hackage.haskell.org/package/password-3.0.0.0/docs/src/Data.Password.Argon2.html#defaultParams
